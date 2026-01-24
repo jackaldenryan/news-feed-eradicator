@@ -1,7 +1,7 @@
-import type { ParentComponent } from "solid-js";
+import { Show, type ParentComponent } from "solid-js";
 import type { SnoozeMode } from "/storage/schema";
 import { useOptionsPageState } from "../../state";
-import { saveSnoozeMode } from "/storage/storage";
+import { saveSnoozeMode, saveTypingLockEnabled, saveTypingLockCharCount } from "/storage/storage";
 import { LockedSettingsOverlay, SettingsLockFooter } from "../../lock";
 
 const SnoozeModeOption: ParentComponent<{ mode: SnoozeMode, title: string }> = ({ mode, title, children }) => {
@@ -27,6 +27,61 @@ const SnoozeModeOption: ParentComponent<{ mode: SnoozeMode, title: string }> = (
 	</li>
 }
 
+const TypingLockSettings = () => {
+	const state = useOptionsPageState();
+
+	const onToggle = async () => {
+		const newValue = !state.typingLockEnabled.get();
+		await saveTypingLockEnabled(newValue);
+		state.typingLockEnabled.refetch();
+	};
+
+	const onCharCountChange = async (e: Event) => {
+		const value = parseInt((e.target as HTMLInputElement).value, 10);
+		if (value >= 10 && value <= 500) {
+			await saveTypingLockCharCount(value);
+			state.typingLockCharCount.refetch();
+		}
+	};
+
+	return (
+		<div class="space-y-3">
+			<div class="font-lg">Typing Lock</div>
+			<div class="text-secondary font-sm">
+				Require typing random words before you can snooze. This adds friction to make snoozing more intentional.
+			</div>
+
+			<label class="flex gap-2 cross-center cursor-pointer">
+				<input
+					type="checkbox"
+					class="toggle"
+					checked={state.typingLockEnabled.get() ?? false}
+					onChange={onToggle}
+					disabled={state.settingsLockedDown()}
+				/>
+				<span>Enable typing lock</span>
+			</label>
+
+			<Show when={state.typingLockEnabled.get()}>
+				<div class="flex gap-2 cross-center pl-6">
+					<label class="text-secondary">Characters required:</label>
+					<input
+						type="number"
+						class="p-1 rounded b-1"
+						style="width: 80px;"
+						min={10}
+						max={500}
+						value={state.typingLockCharCount.get() ?? 50}
+						onChange={onCharCountChange}
+						disabled={state.settingsLockedDown()}
+					/>
+					<span class="text-secondary font-sm">(10-500)</span>
+				</div>
+			</Show>
+		</div>
+	);
+};
+
 export const SnoozeTabContent = () => {
 	const state = useOptionsPageState();
 
@@ -42,6 +97,13 @@ export const SnoozeTabContent = () => {
 						Not worried about your self-control? With this option you can just hit a button to start snoozing instantly.
 					</SnoozeModeOption>
 				</ul>
+
+				<hr class="b-darken-100" />
+
+				<div class="z1 blur-disabled" aria-disabled={state.settingsLockedDown()}>
+					<TypingLockSettings />
+				</div>
+
 				<LockedSettingsOverlay />
 			</div>
 			<SettingsLockFooter />

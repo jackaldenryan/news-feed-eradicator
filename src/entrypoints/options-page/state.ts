@@ -2,7 +2,7 @@ import { createSignal, createEffect, type Accessor, type Setter, createContext, 
 import type { QuoteList, QuoteListId } from "../../storage/schema";
 import { expect, originsForSite } from "../../lib/util";
 import type { SiteId, SiteList } from "../../types/sitelist";
-import { loadEnabledSites, loadHideQuotes, loadQuoteList, loadQuoteLists, loadSettingsLocked, loadSnoozeMode, saveHideQuotes, saveNewQuoteList, saveSettingsLocked } from "../../storage/storage";
+import { loadEnabledSites, loadHideQuotes, loadQuoteList, loadQuoteLists, loadSettingsLocked, loadSnoozeMode, loadTypingLockEnabled, loadTypingLockCharCount, saveHideQuotes, saveNewQuoteList, saveSettingsLocked } from "../../storage/storage";
 import type { Quote } from "../../quote";
 import { sendToServiceWorker } from "../../messaging/messages";
 import { getBrowser, type Permissions } from "../../lib/webextension";
@@ -97,6 +97,12 @@ export class OptionsPageState {
 	}));
 
 	quoteLists = resourceObjReconciled(loadQuoteLists);
+
+	// Typing lock settings
+	typingLockEnabled = resourceObj(createResource(loadTypingLockEnabled));
+	typingLockCharCount = resourceObj(createResource(loadTypingLockCharCount));
+	// Ephemeral state for typing lock completion (resets on page reload)
+	typingLockCompleted = signalObj<boolean>(false);
 
 	constructor() {
 		// Clock is only used for animating and updating displayed times
@@ -244,6 +250,10 @@ export class OptionsPageState {
 
 	canUnlockSettings() {
 		return this.snoozeRemaining() > 0;
+	}
+
+	resetTypingLockCompletion() {
+		this.typingLockCompleted.set(false);
 	}
 }
 
