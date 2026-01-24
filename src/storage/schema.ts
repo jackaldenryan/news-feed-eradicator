@@ -17,6 +17,8 @@ export type StorageLocalV2 = {
 	siteConfig?: Record<SiteId, SiteConfig>;
 	snoozeUntil?: number;
 	quoteLists?: QuoteList[];
+	typingLockEnabled?: boolean;      // Whether typing lock is enabled
+	typingLockCharCount?: number;     // Characters required (10-500, default 50)
 };
 
 export type QuoteList = {

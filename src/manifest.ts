@@ -19,7 +19,6 @@ export default {
 	},
 	"background": {
 		"service_worker": "entrypoints/service-worker/service-worker.js",
-		"scripts": ["entrypoints/service-worker/service-worker.js"],
 		"type": "module"
 	},
 	"options_ui": {

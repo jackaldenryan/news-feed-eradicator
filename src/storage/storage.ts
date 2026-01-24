@@ -104,6 +104,11 @@ export const saveSnoozeUntil = (snoozeUntil: number | undefined) => setKey('snoo
 export const loadSnoozeMode = () => getKey('snoozeMode', 'hold');
 export const saveSnoozeMode = (snoozeMode: SnoozeMode) => setKey('snoozeMode', snoozeMode);
 
+export const loadTypingLockEnabled = () => getKey('typingLockEnabled', false);
+export const saveTypingLockEnabled = (enabled: boolean) => setKey('typingLockEnabled', enabled);
+export const loadTypingLockCharCount = () => getKey('typingLockCharCount', 50);
+export const saveTypingLockCharCount = (count: number) => setKey('typingLockCharCount', count);
+
 export const loadSiteConfig = async (siteId: SiteId): Promise<SiteConfig | undefined> => {
 	const sites = await getKey('siteConfig', {});
 	return sites[siteId];

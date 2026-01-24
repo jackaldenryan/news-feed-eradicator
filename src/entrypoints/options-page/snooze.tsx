@@ -2,6 +2,7 @@ import { createMemo, createSignal, Show, type ParentComponent } from "solid-js";
 import { displayDuration } from "../../lib/time";
 import { useOptionsPageState } from "./state";
 import { DAY, HOUR, MINUTE } from "/lib/time";
+import { TypingLock } from "./typing-lock";
 
 type SnoozePendingInfo = {
 	secondsEarned: number;
@@ -102,8 +103,21 @@ export const Snooze = () => {
 		return snoozeState != null && snoozeState > state.clock.get();
 	}
 
+	// Check if typing lock should be shown
+	const showTypingLock = () => {
+		return state.typingLockEnabled.get() === true &&
+			!state.typingLockCompleted.get() &&
+			!isSnoozing();
+	};
+
 	return <div>
-		<Show when={!isSnoozing()}>
+		{/* Show typing lock when enabled and not completed */}
+		<Show when={showTypingLock()}>
+			<TypingLock />
+		</Show>
+
+		{/* Only show snooze buttons when typing lock is completed or disabled */}
+		<Show when={!isSnoozing() && !showTypingLock()}>
 			<div class="flex axis-center">
 				<Show when={state.snoozeMode.get() === 'hold'}>
 					<HoldSnoozeButton />
@@ -117,9 +131,12 @@ export const Snooze = () => {
 		<Show when={isSnoozing()}>
 			<div class="flex cross-center p-4 card secondary outlined shadow">
 				<div class="flex-1">
-					💤 Snoozing for {displayDuration((state.snoozeState.get()! - state.clock.get()))}. Scroll your life away!
+					Snoozing for {displayDuration((state.snoozeState.get()! - state.clock.get()))}. Scroll your life away!
 				</div>
-				<button class="secondary" onClick={() => state.cancelSnooze()}>
+				<button class="secondary" onClick={() => {
+					state.cancelSnooze();
+					state.resetTypingLockCompletion();
+				}}>
 					Cancel snooze
 				</button>
 			</div>
