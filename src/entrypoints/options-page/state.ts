@@ -2,7 +2,7 @@ import { createSignal, createEffect, type Accessor, type Setter, createContext, 
 import type { QuoteList, QuoteListId } from "../../storage/schema";
 import { expect, originsForSite } from "../../lib/util";
 import type { SiteId, SiteList } from "../../types/sitelist";
-import { loadEnabledSites, loadHideQuotes, loadQuoteList, loadQuoteLists, loadSettingsLocked, loadSnoozeMode, loadTypingLockEnabled, loadTypingLockCharCount, saveHideQuotes, saveNewQuoteList, saveSettingsLocked } from "../../storage/storage";
+import { loadEnabledSites, loadHideQuotes, loadQuoteList, loadQuoteLists, loadGlobalLockEnabled, loadGlobalLockWordCount, saveGlobalLockEnabled, saveGlobalLockWordCount, saveHideQuotes, saveNewQuoteList } from "../../storage/storage";
 import type { Quote } from "../../quote";
 import { sendToServiceWorker } from "../../messaging/messages";
 import { getBrowser, type Permissions } from "../../lib/webextension";
@@ -67,7 +67,7 @@ export const resourceObjReconciled = <T>(fn: () => Promise<T[]>) => {
 	return {get, refetch};
 };
 
-export type PageId = 'sites' | 'snooze' | 'quotes' | 'about' | 'debug';
+export type PageId = 'sites' | 'quotes' | 'about' | 'debug';
 
 const browser = getBrowser();
 
@@ -78,11 +78,7 @@ export class OptionsPageState {
 	editing = signalObj<EditingState | null>(null);
 	page = signalObj<PageId>('sites');
 	undo = signalObj<UndoState | null>(null);
-	clock = signalObj<number>(Date.now());
 
-	settingsLocked = resourceObj(createResource(loadSettingsLocked));
-	snoozeState = resourceObj(createResource<number | null>(async () => browser.runtime.sendMessage({ type: 'readSnooze' })));
-	snoozeMode = resourceObj(createResource(loadSnoozeMode));
 	enabledSites = resourceObj(createResource(loadEnabledSites));
 	hideQuotes = resourceObj(createResource(loadHideQuotes));
 	permissions = resourceObj(createResource(() => browser.permissions.getAll()));
@@ -98,20 +94,11 @@ export class OptionsPageState {
 
 	quoteLists = resourceObjReconciled(loadQuoteLists);
 
-	// Typing lock settings
-	typingLockEnabled = resourceObj(createResource(loadTypingLockEnabled));
-	typingLockCharCount = resourceObj(createResource(loadTypingLockCharCount));
-	// Ephemeral state for typing lock completion (resets on page reload)
-	typingLockCompleted = signalObj<boolean>(false);
-
-	constructor() {
-		// Clock is only used for animating and updating displayed times
-		const updateClock = () => {
-			this.clock.set(Date.now());
-			requestAnimationFrame(updateClock);
-		};
-		requestAnimationFrame(updateClock);
-	}
+	// Global lock state
+	globalLockEnabled = resourceObj(createResource(loadGlobalLockEnabled));
+	globalLockWordCount = resourceObj(createResource(loadGlobalLockWordCount));
+	// Ephemeral unlock state (resets on page reload)
+	globalLockUnlocked = signalObj<boolean>(false);
 
 	selectedQuoteList = createMemo(() => {
 		const qlId = this.selectedQuoteListId.get();
@@ -210,50 +197,31 @@ export class OptionsPageState {
 		this.requestPermissions({ origins, permissions: [] });
 	}
 
-	async startSnooze(durationMs: number) {
-		await browser.runtime.sendMessage({
-			type: 'snooze',
-			until: this.clock.get() + durationMs,
-		})
-
-		this.snoozeState.refetch();
+	isLocked() {
+		return this.globalLockEnabled.get() === true && !this.globalLockUnlocked.get();
 	}
 
-	async cancelSnooze() {
-		await browser.runtime.sendMessage({
-			type: 'snooze',
-			until: this.clock.get(),
-		})
-		this.snoozeState.refetch();
+	async lockSettings() {
+		this.selectedSiteId.set(null);
+		this.globalLockUnlocked.set(false);
+		await saveGlobalLockEnabled(true);
+		await this.globalLockEnabled.refetch();
 	}
 
-	snoozeRemaining() {
-		const snooze = this.snoozeState.get();
-		if (snooze == null) return 0;
-		return Math.max(0, snooze - this.clock.get());
+	unlockSettings() {
+		this.globalLockUnlocked.set(true);
 	}
 
-	async setSettingsLocked(locked: boolean) {
-		if (locked) {
-			this.selectedSiteId.set(null);
-		}
-		await saveSettingsLocked(locked);
-		await this.settingsLocked.refetch();
+	async disableLock() {
+		this.globalLockUnlocked.set(false);
+		await saveGlobalLockEnabled(false);
+		await this.globalLockEnabled.refetch();
 	}
 
-	/**
- * Returns true if the user is not currently allowed to change settings (eg not currently snoozing)
- */
-	settingsLockedDown() {
-		return this.settingsLocked.get() ?? false;
-	}
-
-	canUnlockSettings() {
-		return this.snoozeRemaining() > 0;
-	}
-
-	resetTypingLockCompletion() {
-		this.typingLockCompleted.set(false);
+	async setGlobalLockWordCount(count: number) {
+		const clamped = Math.max(1, Math.min(5000, count));
+		await saveGlobalLockWordCount(clamped);
+		await this.globalLockWordCount.refetch();
 	}
 }
 
