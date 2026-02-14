@@ -5,20 +5,15 @@ export const CURRENT_STORAGE_SCHEMA_VERSION = 2;
 
 export type QuoteListId = ('builtin' | string) & { __quoteListId: never };
 
-export type SnoozeMode = 'instant' | 'hold';
-
 export type StorageLocalV2 = {
 	version: 2;
 	hideQuotes?: boolean;
 	hideWidgetToolbar?: boolean;
-	snoozeMode?: SnoozeMode;
-	settingsLocked?: boolean;
 	enabledSites?: SiteId[];
 	siteConfig?: Record<SiteId, SiteConfig>;
-	snoozeUntil?: number;
 	quoteLists?: QuoteList[];
-	typingLockEnabled?: boolean;      // Whether typing lock is enabled
-	typingLockCharCount?: number;     // Characters required (10-500, default 50)
+	globalLockEnabled?: boolean;      // Whether the global settings lock is on
+	globalLockWordCount?: number;     // Words required to unlock (1-5000, default 10)
 };
 
 export type QuoteList = {

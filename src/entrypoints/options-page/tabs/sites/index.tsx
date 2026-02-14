@@ -4,7 +4,7 @@ import type { Site } from "/types/sitelist";
 import { originsForSite } from "/lib/util";
 import { SiteConfigPanel } from "./site-configuration";
 import { useOptionsPageState } from "../../state";
-import { LockedSettingsOverlay, SettingsLockFooter } from "../../lock";
+import { LockedOverlay } from "../../global-lock";
 
 const browser = getBrowser();
 
@@ -50,7 +50,7 @@ const Site = ({ site }: { site: Site }) => {
 	return <>
 		<li class="hoverable" aria-selected={state.selectedSiteId.get() === site.id}>
 			<label for={id} class={`cursor-pointer px-4 py-2 gap-2 flex cross-center`}>
-				<input id={id} type="checkbox" disabled={state.settingsLockedDown()} class="toggle" onClick={(e) => {
+				<input id={id} type="checkbox" disabled={state.isLocked()} class="toggle" onClick={(e) => {
 						e.preventDefault();
 						if (state.siteState(site.id).enabled) {
 							if (state.selectedSiteId.get() === site.id) {
@@ -87,7 +87,7 @@ export const SiteList = () => {
 	});
 
 	return  <div class="overlay-container">
-		<div class="flex blur-disabled" aria-disabled={state.settingsLockedDown()}>
+		<div class="flex blur-disabled" aria-disabled={state.isLocked()}>
 			<ul class={`flex flex-col py-2 ${selectedSite() == null ? 'flex-1' : 'br-1 mw-xs'}`}>
 				<For each={state.siteList.get()?.sites}>
 					{site => <Site site={site} />}
@@ -100,13 +100,10 @@ export const SiteList = () => {
 			</Show>
 		</div>
 
-		<LockedSettingsOverlay />
+		<LockedOverlay />
 	</div>
 };
 
 export const SitesTabContent = () => {
-	return <div>
-		<SiteList />
-		<SettingsLockFooter />
-	</div>
+	return <SiteList />
 }

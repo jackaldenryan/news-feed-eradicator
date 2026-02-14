@@ -3,13 +3,12 @@ import h from "solid-js/h";
 import { Show, type ParentComponent } from "solid-js";
 
 import { OptionsPageState, OptionsPageStateContext, useOptionsPageState, type PageId } from "./state";
-import { Snooze } from "./snooze";
 import { SitesTabContent } from "./tabs/sites";
 import { Undo } from "./undo";
 import { QuotesTabContent } from "./tabs/quotes";
 import { AboutTabContent } from "./tabs/about";
-import { SnoozeTabContent } from "./tabs/snooze";
 import { DebugTabContent } from "./tabs/debug";
+import { GlobalLockBar } from "./global-lock";
 
 const PageTab: ParentComponent<{to: PageId}> = ({ to, children }) => {
 	const state = useOptionsPageState();
@@ -26,7 +25,6 @@ const PageTab: ParentComponent<{to: PageId}> = ({ to, children }) => {
 const PageTabs = () => {
 	return <ul role="tablist" class="">
 		<PageTab to="sites">Sites</PageTab>
-		<PageTab to="snooze">Snooze</PageTab>
 		<PageTab to="quotes">Quotes</PageTab>
 		<PageTab to="about">About</PageTab>
 		<PageTab to="debug">Debug</PageTab>
@@ -41,8 +39,6 @@ const OptionsPage = () => {
 			<h1 class="text-center font-xl">News Feed Eradicator</h1>
 
 			<OptionsPageStateContext.Provider value={state}>
-				<Snooze />
-
 				<Undo />
 
 				<Show when={!state.allSitePermissionsValid()}>
@@ -53,15 +49,13 @@ const OptionsPage = () => {
 					</div>
 				</Show>
 
+				<GlobalLockBar />
+
 				<nfe-tabs>
 					<PageTabs />
 					<div role="tabpanel" class="shadow">
 						<Show when={state.page.get() === 'sites'}>
 							<SitesTabContent />
-						</Show>
-
-						<Show when={state.page.get() === 'snooze'}>
-							<SnoozeTabContent />
 						</Show>
 
 						<Show when={state.page.get() === 'quotes'}>
